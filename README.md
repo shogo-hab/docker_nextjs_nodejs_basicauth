@@ -9,5 +9,5 @@ docker build \
 
 # run
 ```
-docker run -it -p 3000:3000 --rm node-next-basic-auth npm run start
+docker run -it -p 3000:3000 --rm node-next-basic-auth
 ```

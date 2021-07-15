@@ -1,5 +1,5 @@
 # フロントエンド(Next.js)のビルド
-FROM node:15.14.0-alpine3.13 as frontend
+FROM node:16-alpine as frontend
 WORKDIR /frontend
 
 COPY /frontend/pages /frontend/pages
@@ -16,22 +16,33 @@ RUN npm ci
 RUN npx next build
 RUN npx next export
 
-# バックエンドのビルドとフロントエンドの成果物の設置
-FROM node:15.14.0-alpine3.13 as backend
+# バックエンドのビルド
+FROM node:16-alpine as backend
 WORKDIR /backend
 COPY /backend/src /backend/src
 COPY /backend/package.json /backend/package.json
 COPY /backend/package-lock.json /backend/package-lock.json
 COPY /backend/tsconfig.json /backend/tsconfig.json
 
+RUN npm ci
+RUN npm run build
+
+# ホスティング用のNode.jsコンテナ
+FROM node:16-slim
+WORKDIR /app
+
+COPY --from=frontend /frontend/out/ public/
+COPY --from=backend /backend/dist/index.js index.js
+COPY --from=backend /backend/package.json package.json
+COPY --from=backend /backend/package-lock.json package-lock.json
+
+RUN npm ci --production
+
 ARG BASIC_AUTH_USERNAME 
 ARG BASIC_AUTH_PASSWORD
 ENV BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
 ENV BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
 
-RUN npm ci
-RUN npm run build
-RUN chmod -R 755 dist
-
-COPY --from=frontend /frontend/out/ public/
+# RUN chmod -R 755 dist
 EXPOSE 3000
+CMD ["node", "index.js"]
