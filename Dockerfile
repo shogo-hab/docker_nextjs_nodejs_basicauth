@@ -18,6 +18,7 @@ RUN npx next export
 
 # バックエンドのビルド
 FROM node:16-alpine as backend
+RUN apk add make automake gcc g++ subversion python3
 WORKDIR /backend
 COPY /backend/src /backend/src
 COPY /backend/package.json /backend/package.json
@@ -33,16 +34,11 @@ WORKDIR /app
 
 COPY --from=frontend /frontend/out/ public/
 COPY --from=backend /backend/dist/index.js index.js
-COPY --from=backend /backend/package.json package.json
-COPY --from=backend /backend/package-lock.json package-lock.json
-
-RUN npm ci --production
 
 ARG BASIC_AUTH_USERNAME 
 ARG BASIC_AUTH_PASSWORD
 ENV BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME}
 ENV BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD}
 
-# RUN chmod -R 755 dist
 EXPOSE 3000
 CMD ["node", "index.js"]
